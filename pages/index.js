@@ -1,65 +1,121 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import React, { useEffect, useRef } from "react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import Prismic from "prismic-javascript";
+import {
+  AutoSizer,
+  CellMeasurer,
+  CellMeasurerCache,
+  createMasonryCellPositioner,
+  Masonry,
+} from "react-virtualized";
 
-export default function Home() {
+import styles from "../styles/Home.module.css";
+import { filterItemsByQuery } from "../src/helpers/utils";
+
+import { Client } from "../src/api/prismic-configuration";
+import Filters from "../src/components/Filters";
+
+export const getStaticProps = async (context) => {
+  const req = context.req;
+  const items = await Client(req).query(
+    Prismic.Predicates.at("document.type", "items")
+  );
+
+  return {
+    props: {
+      items,
+    },
+  };
+};
+
+const cache = new CellMeasurerCache({
+  defaultHeight: 230,
+  defaultWidth: 230,
+  fixedWidth: true,
+});
+
+const cellPositioner = createMasonryCellPositioner({
+  cellMeasurerCache: cache,
+  columnCount: 3,
+  columnWidth: 230,
+  spacer: 10,
+});
+
+function Home({ items }) {
+  const router = useRouter();
+
+  const { query } = router;
+
+  const itemsFiltered = filterItemsByQuery(items, query);
+
+  function cellRenderer({ index, key, parent, style }) {
+    const item = itemsFiltered[index];
+
+    return (
+      item && (
+        <CellMeasurer cache={cache} index={index} key={key} parent={parent}>
+          <div style={style}>
+            <img
+              src={item.data.image.url}
+              style={{
+                width: item.data.image.dimensions.width / 2,
+                height: item.data.image.dimensions.height / 2,
+              }}
+            />
+            <h4>{item.data.name.value}</h4>
+          </div>
+        </CellMeasurer>
+      )
+    );
+  }
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
+        <title>Anima Item Databasea</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          Welcome to unofficial{" "}
+          <a target="_blank" href="https://www.animathegame.com/">
+            Anima
+          </a>{" "}
+          Item Database!
         </h1>
 
         <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
+          Get started by selecting filters below
         </p>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <Filters />
       </main>
+      <div className={styles.items}>
+        {items && (
+          <AutoSizer>
+            {({ height, width }) => (
+              <Masonry
+                cellCount={itemsFiltered.length}
+                cellMeasurerCache={cache}
+                cellPositioner={cellPositioner}
+                cellRenderer={cellRenderer}
+                height={height}
+                width={width}
+              />
+            )}
+          </AutoSizer>
+        )}
+      </div>
 
       <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
+        <a href="https://spiso.sk" target="_blank" rel="noopener noreferrer">
+          Created by Spiso
         </a>
       </footer>
     </div>
-  )
+  );
 }
+
+export default Home;
