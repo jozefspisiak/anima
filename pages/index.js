@@ -94,17 +94,23 @@ function Home({ items }) {
       </main>
       <div className={styles.items}>
         {items && (
-          <AutoSizer>
-            {({ height, width }) => (
-              <Masonry
-                cellCount={itemsFiltered.length}
-                cellMeasurerCache={cache}
-                cellPositioner={cellPositioner}
-                cellRenderer={cellRenderer}
-                height={height}
-                width={width}
-              />
-            )}
+          <AutoSizer defaultHeight={800} defaultWidth={1000}>
+            {({ height, width }) => {
+              if (!width || !height) {
+                //dont try to correct
+                return <div>Loading ...</div>;
+              }
+              return (
+                <Masonry
+                  cellCount={itemsFiltered.length}
+                  cellMeasurerCache={cache}
+                  cellPositioner={cellPositioner}
+                  cellRenderer={cellRenderer}
+                  height={height}
+                  width={width}
+                />
+              );
+            }}
           </AutoSizer>
         )}
       </div>
